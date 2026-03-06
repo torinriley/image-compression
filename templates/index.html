@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMGCRUSH</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface-2: #1c1c1c;
+    --border: #262626;
+    --border-hover: #3a3a3a;
+    --text: #e5e5e5;
+    --text-muted: #737373;
+    --text-dim: #525252;
+    --white: #fafafa;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --radius-xs: 8px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 48px;
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    color: var(--white);
+  }
+
+  header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ── Drop Zone ── */
+  .dropzone {
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 56px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    position: relative;
+  }
+
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--border-hover);
+    background: var(--surface-2);
+  }
+
+  .dropzone.has-file {
+    padding: 24px;
+    border-style: solid;
+    border-color: var(--border);
+  }
+
+  .dropzone-label {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .dropzone-label span {
+    color: var(--white);
+    font-weight: 500;
+  }
+
+  .file-input { display: none; }
+
+  .file-info {
+    display: none;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .file-info.visible { display: flex; }
+
+  .file-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-xs);
+    object-fit: cover;
+    background: var(--surface-2);
+  }
+
+  .file-meta {
+    text-align: left;
+    flex: 1;
+  }
+
+  .file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--white);
+    word-break: break-all;
+  }
+
+  .file-size {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .file-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.15s;
+  }
+
+  .file-remove:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  /* ── Settings ── */
+  .settings {
+    display: none;
+    margin-top: 24px;
+    gap: 16px;
+  }
+
+  .settings.visible {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .field {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+  }
+
+  .field.full { grid-column: 1 / -1; }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  /* Format pills */
+  .format-pills {
+    display: flex;
+    gap: 6px;
+  }
+
+  .format-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .format-pill:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
+
+  .format-pill.active {
+    background: var(--white);
+    color: var(--bg);
+    border-color: var(--white);
+  }
+
+  /* Inputs */
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .input-field {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    padding: 10px 14px;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  .input-field:focus {
+    border-color: var(--border-hover);
+  }
+
+  .input-field::placeholder {
+    color: var(--text-dim);
+  }
+
+  .input-sm { width: 100px; }
+  .input-xs { width: 80px; }
+
+  .unit-select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    padding: 10px 12px;
+    color: var(--text-muted);
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+
+  .dim-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .dim-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 14px;
+  }
+
+  .dim-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  .png-note {
+    display: none;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  .png-note.visible { display: block; }
+
+  /* ── Compress Button ── */
+  .compress-btn {
+    display: none;
+    width: 100%;
+    margin-top: 24px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    background: var(--white);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .compress-btn.visible { display: block; }
+
+  .compress-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  .compress-btn:active {
+    transform: translateY(0);
+  }
+
+  .compress-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Results ── */
+  .results {
+    display: none;
+    margin-top: 32px;
+  }
+
+  .results.visible { display: block; }
+
+  .results-header {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--white);
+  }
+
+  .stat-value.highlight {
+    color: #4ade80;
+  }
+
+  .stat-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface);
+    color: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .download-btn:hover {
+    border-color: var(--border-hover);
+    background: var(--surface-2);
+  }
+
+  /* ── Preview ── */
+  .preview-section {
+    display: none;
+    margin-top: 24px;
+    gap: 12px;
+  }
+
+  .preview-section.visible {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .preview-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .preview-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    padding: 12px 14px 0;
+  }
+
+  .preview-img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: contain;
+    padding: 12px;
+  }
+
+  /* ── Spinner ── */
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--bg);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .settings.visible {
+      grid-template-columns: 1fr;
+    }
+    .field.full { grid-column: 1; }
+    .stats-grid { grid-template-columns: 1fr; }
+    .preview-section.visible { grid-template-columns: 1fr; }
+    .container { padding: 32px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>imgcrush</h1>
+    <p>compress without compromise</p>
+  </header>
+
+  <!-- Drop Zone -->
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-label" id="dropLabel">
+      <span>Click to upload</span> or drag and drop<br>
+      JPG, PNG, WebP, BMP, TIFF, GIF
+    </div>
+    <div class="file-info" id="fileInfo">
+      <img class="file-thumb" id="fileThumb" alt="">
+      <div class="file-meta">
+        <div class="file-name" id="fileName"></div>
+        <div class="file-size" id="fileSize"></div>
+      </div>
+      <button class="file-remove" id="fileRemove" title="Remove">&times;</button>
+    </div>
+    <input type="file" class="file-input" id="fileInput" accept="image/*">
+  </div>
+
+  <!-- Settings -->
+  <div class="settings" id="settings">
+    <div class="field full">
+      <div class="field-label">Format</div>
+      <div class="format-pills" id="formatPills">
+        <button class="format-pill active" data-format="JPEG">JPEG</button>
+        <button class="format-pill" data-format="PNG">PNG</button>
+        <button class="format-pill" data-format="WEBP">WebP</button>
+      </div>
+      <div class="png-note" id="pngNote">PNG is lossless — target size is advisory only</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Target Size</div>
+      <div class="input-row">
+        <input type="number" class="input-field input-sm" id="targetSize" value="200" min="1">
+        <select class="unit-select" id="targetUnit">
+          <option value="KB">KB</option>
+          <option value="MB">MB</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Resize (optional)</div>
+      <div class="dim-group">
+        <span class="dim-label">W</span>
+        <input type="number" class="input-field input-xs" id="resizeW" placeholder="auto">
+        <span class="dim-label">H</span>
+        <input type="number" class="input-field input-xs" id="resizeH" placeholder="auto">
+      </div>
+      <div class="dim-hint">Leave blank to keep original</div>
+    </div>
+  </div>
+
+  <!-- Compress Button -->
+  <button class="compress-btn" id="compressBtn" onclick="compress()">Compress</button>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="results-header">Result</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Original</div>
+        <div class="stat-value" id="statOrigSize">—</div>
+        <div class="stat-sub" id="statOrigDim"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Compressed</div>
+        <div class="stat-value" id="statCompSize">—</div>
+        <div class="stat-sub" id="statCompDim"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Reduction</div>
+        <div class="stat-value highlight" id="statReduction">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Quality</div>
+        <div class="stat-value" id="statQuality">—</div>
+        <div class="stat-sub" id="statFormat"></div>
+      </div>
+    </div>
+    <a class="download-btn" id="downloadBtn" href="#">↓ Download</a>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-section" id="previewSection">
+    <div class="preview-box">
+      <div class="preview-label">Original</div>
+      <img class="preview-img" id="previewOrig" alt="Original">
+    </div>
+    <div class="preview-box">
+      <div class="preview-label">Compressed</div>
+      <img class="preview-img" id="previewComp" alt="Compressed">
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let fileId = null;
+  let selectedFormat = 'JPEG';
+
+  // ── Elements ──
+  const dropzone = document.getElementById('dropzone');
+  const dropLabel = document.getElementById('dropLabel');
+  const fileInfo = document.getElementById('fileInfo');
+  const fileInput = document.getElementById('fileInput');
+  const fileThumb = document.getElementById('fileThumb');
+  const fileName = document.getElementById('fileName');
+  const fileSize = document.getElementById('fileSize');
+  const fileRemove = document.getElementById('fileRemove');
+  const settings = document.getElementById('settings');
+  const compressBtn = document.getElementById('compressBtn');
+  const results = document.getElementById('results');
+  const previewSection = document.getElementById('previewSection');
+  const pngNote = document.getElementById('pngNote');
+
+  // ── Drop Zone ──
+  dropzone.addEventListener('click', (e) => {
+    if (e.target === fileRemove || e.target.closest('.file-remove')) return;
+    fileInput.click();
+  });
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('drag-over');
+  });
+
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('drag-over');
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) uploadFile(fileInput.files[0]);
+  });
+
+  fileRemove.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resetUI();
+  });
+
+  // ── Format Pills ──
+  document.querySelectorAll('.format-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.format-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      selectedFormat = pill.dataset.format;
+      pngNote.classList.toggle('visible', selectedFormat === 'PNG');
+    });
+  });
+
+  // ── Upload ──
+  async function uploadFile(file) {
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      const res = await fetch('/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+
+      fileId = data.file_id;
+      fileName.textContent = data.filename;
+      fileSize.textContent = `${data.size_kb} KB · ${data.width}×${data.height}`;
+      fileThumb.src = `/preview/${data.file_id}`;
+
+      dropLabel.style.display = 'none';
+      fileInfo.classList.add('visible');
+      dropzone.classList.add('has-file');
+      settings.classList.add('visible');
+      compressBtn.classList.add('visible');
+      results.classList.remove('visible');
+      previewSection.classList.remove('visible');
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    }
+  }
+
+  // ── Compress ──
+  async function compress() {
+    if (!fileId) return;
+
+    compressBtn.disabled = true;
+    compressBtn.innerHTML = '<span class="spinner"></span>Compressing…';
+
+    const body = {
+      file_id: fileId,
+      format: selectedFormat,
+      target_size: parseFloat(document.getElementById('targetSize').value) || 200,
+      unit: document.getElementById('targetUnit').value,
+      resize_w: document.getElementById('resizeW').value || null,
+      resize_h: document.getElementById('resizeH').value || null,
+    };
+
+    try {
+      const res = await fetch('/compress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+
+      // Stats
+      document.getElementById('statOrigSize').textContent = data.original_kb + ' KB';
+      document.getElementById('statOrigDim').textContent = data.original_dim;
+      document.getElementById('statCompSize').textContent = data.result_kb + ' KB';
+      document.getElementById('statCompDim').textContent = data.new_dim;
+      document.getElementById('statReduction').textContent = data.reduction + '%';
+      document.getElementById('statQuality').textContent =
+        typeof data.quality === 'number' ? 'q=' + data.quality : data.quality;
+      document.getElementById('statFormat').textContent = data.format;
+
+      // Download link
+      document.getElementById('downloadBtn').href = `/download/${data.compressed_id}`;
+
+      // Previews
+      document.getElementById('previewOrig').src = `/preview/${fileId}`;
+      document.getElementById('previewComp').src = `/preview/${data.compressed_id}?t=${Date.now()}`;
+
+      results.classList.add('visible');
+      previewSection.classList.add('visible');
+    } catch (err) {
+      alert('Compression failed: ' + err.message);
+    } finally {
+      compressBtn.disabled = false;
+      compressBtn.textContent = 'Compress';
+    }
+  }
+
+  // ── Reset ──
+  function resetUI() {
+    fileId = null;
+    fileInput.value = '';
+    dropLabel.style.display = '';
+    fileInfo.classList.remove('visible');
+    dropzone.classList.remove('has-file');
+    settings.classList.remove('visible');
+    compressBtn.classList.remove('visible');
+    results.classList.remove('visible');
+    previewSection.classList.remove('visible');
+  }
+</script>
+
+</body>
+</html>
